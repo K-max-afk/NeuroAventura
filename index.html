@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NeuroAventura</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #b2ebf2;
+      overflow: hidden;
+    }
+    .pantalla {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      transition: all 0.5s ease-in-out;
+      padding: 20px;
+      text-align: center;
+    }
+    .activa {
+      display: flex;
+    }
+    h1, h2, p, label {
+      color: #004d40;
+    }
+    input[type="text"], select, textarea {
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+    button {
+      padding: 12px 24px;
+      margin-top: 20px;
+      border: none;
+      border-radius: 12px;
+      background-color: #00796b;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      transition: transform 0.3s ease, background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #004d40;
+      transform: scale(1.1);
+    }
+    .confeti {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      top: 0;
+      left: 0;
+      z-index: 999;
+    }
+    .confeti span {
+      position: absolute;
+      display: block;
+      width: 10px;
+      height: 10px;
+      opacity: 0.7;
+      animation: confeti 3s linear infinite;
+      background: red;
+    }
+    @keyframes confeti {
+      0% { transform: translateY(0) rotate(0); }
+      100% { transform: translateY(800px) rotate(360deg); }
+    }
+    footer {
+      position: fixed;
+      bottom: 5px;
+      width: 100%;
+      text-align: center;
+      font-size: 12px;
+      color: #004d40;
+      background: rgba(255, 255, 255, 0.7);
+      padding: 4px 0;
+      user-select: none;
+    }
+    img.preg-img {
+      width: 250px;
+      border-radius: 10px;
+      margin: 1rem 0;
+    }
+  </style>
+
+  <!-- Firebase Modular SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAy8e8wMKFuC367n7KAUYKiv800J-AK1xQ",
+      authDomain: "neuroaventura-e87aa.firebaseapp.com",
+      databaseURL: "https://neuroaventura-e87aa-default-rtdb.firebaseio.com",
+      projectId: "neuroaventura-e87aa",
+      storageBucket: "neuroaventura-e87aa.appspot.com",
+      messagingSenderId: "594015476759",
+      appId: "1:594015476759:web:a3d1b5d48efdaf82ad9052",
+      measurementId: "G-LT32KWGFPR"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // Hacer accesible globalmente
+    window.guardarRespuestas = function () {
+      const nombre = document.getElementById('nombreEstudiante').value.trim();
+      if (!nombre) return;
+      const respuestas = {
+        inteligencia: {
+          r1: document.getElementById('r1').value,
+          r2: document.getElementById('r2').value,
+          r3: document.getElementById('r3').value
+        },
+        aptitudes: {
+          r4: document.getElementById('r4').value,
+          r5: document.getElementById('r5').value,
+          r6: document.getElementById('r6').value
+        },
+        personalidad: {
+          r7: document.getElementById('r7').value,
+          r8: document.getElementById('r8').value,
+          r9: document.getElementById('r9').value
+        }
+      };
+      set(ref(database, 'respuestas/' + nombre), respuestas)
+        .then(() => console.log("Respuestas guardadas"))
+        .catch((error) => console.error("Error al guardar respuestas:", error));
+    };
+
+    // Resto de funciones globales
+    window.mostrar = function(idPantalla) {
+      document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
+      document.getElementById(idPantalla).classList.add('activa');
+      if (idPantalla === 'espera') {
+        const nombre = document.getElementById('nombreEstudiante').value.trim();
+        document.getElementById('mostrarNombre').innerText = nombre;
+        document.getElementById('nombreFinal').innerText = nombre;
+        setTimeout(() => {
+          document.getElementById('startTest').style.display = 'inline-block';
+        }, 1000);
+      }
+      if (idPantalla === 'final') lanzarConfeti();
+    };
+
+    window.validarNombre = function () {
+      const nombre = document.getElementById('nombreEstudiante').value.trim();
+      if (!nombre) {
+        alert("Por favor escribe tu nombre para continuar.");
+        return;
+      }
+      mostrar('espera');
+    };
+
+    window.validarNivel = function (actual, siguiente, campos) {
+      for (let id of campos) {
+        if (document.getElementById(id).value === '') {
+          alert("Por favor responde todas las preguntas antes de continuar.");
+          return false;
+        }
+      }
+      mostrar(siguiente);
+      return true;
+    };
+
+    window.lanzarConfeti = function () {
+      const contenedor = document.getElementById('confeti');
+      for (let i = 0; i < 100; i++) {
+        const span = document.createElement('span');
+        span.style.left = Math.random() * window.innerWidth + 'px';
+        span.style.top = '-20px';
+        span.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
+        contenedor.appendChild(span);
+      }
+    };
+
+    window.finalizarTest = function () {
+      if (!validarNivel('nivel3', 'final', ['r7', 'r8', 'r9'])) return;
+      guardarRespuestas();
+      mostrar('final');
+    };
+
+    window.iniciarMusicaYMostrar = function(idPantalla) {
+      const audio = document.getElementById('musica');
+      audio.play().catch(() => {});
+      mostrar(idPantalla);
+    };
+  </script>
+</head>
+
+<body>
+  <audio id="musica" loop>
+    <source src="musica.mp3" type="audio/mp3" />
+  </audio>
+
+  <div class="pantalla activa" id="inicio">
+    <h1>¡Hola! Bienvenidos a <strong>NeuroAventura</strong></h1>
+    <p>Una experiencia interactiva de 3 niveles para explorar tu mente.</p>
+    <button onclick="iniciarMusicaYMostrar('nombre')">Siguiente</button>
+  </div>
+
+  <div class="pantalla" id="nombre">
+    <h2>¿Cómo te llamas?</h2>
+    <input type="text" id="nombreEstudiante" placeholder="Escribe tu nombre" />
+    <button onclick="validarNombre()">Listo</button>
+  </div>
+
+  <div class="pantalla" id="espera">
+    <h2>Hola <span id="mostrarNombre"></span> 😊</h2>
+    <p>Espera a que el docente inicie la aventura...</p>
+    <button id="startTest" style="display:none;" onclick="mostrar('nivel1')">Iniciar Nivel 1</button>
+  </div>
+
+  <div class="pantalla" id="nivel1">
+    <h2>Nivel 1: Inteligencia</h2>
+    <label>1. ¿Qué número sigue en la serie? 2, 4, 6, 8, ___<br>
+      <select id="r1">
+        <option value="">Selecciona una opción</option>
+        <option>10</option>
+        <option>9</option>
+        <option>11</option>
+      </select>
+    </label><br><br>
+    <label>2. ¿Cuál palabra no encaja?<br>
+      <select id="r2">
+        <option value="">Selecciona una opción</option>
+        <option>Manzana</option>
+        <option>Pera</option>
+        <option>Zapato</option>
+      </select>
+    </label><br><br>
+    <label>3. Si 5 + 3 = 8, entonces 8 - 3 = ?<br>
+      <select id="r3">
+        <option value="">Selecciona una opción</option>
+        <option>5</option>
+        <option>4</option>
+        <option>6</option>
+      </select>
+    </label><br>
+    <button onclick="validarNivel('nivel1', 'nivel2', ['r1','r2','r3'])">Siguiente Nivel</button>
+  </div>
+
+  <div class="pantalla" id="nivel2">
+    <h2>Nivel 2: Aptitudes</h2>
+    <label>1. ¿Prefieres...?<br>
+      <select id="r4">
+        <option value="">Selecciona una opción</option>
+        <option>Armar rompecabezas</option>
+        <option>Leer cuentos</option>
+      </select>
+    </label><br><br>
+    <label>2. ¿Qué haces mejor?<br>
+      <select id="r5">
+        <option value="">Selecciona una opción</option>
+        <option>Dibujar</option>
+        <option>Correr</option>
+        <option>Memorizar</option>
+      </select>
+    </label><br><br>
+    <label>3. ¿Eres bueno recordando detalles?<br>
+      <select id="r6">
+        <option value="">Selecciona una opción</option>
+        <option>Sí</option>
+        <option>No</option>
+        <option>A veces</option>
+      </select>
+    </label><br>
+    <button onclick="validarNivel('nivel2', 'nivel3', ['r4','r5','r6'])">Siguiente Nivel</button>
+  </div>
+
+  <div class="pantalla" id="nivel3">
+    <h2>Nivel 3: Personalidad</h2>
+    <label>1. ¿Cómo te sientes hoy?<br>
+      <select id="r7">
+        <option value="">Selecciona una opción</option>
+        <option>😊 Feliz</option>
+        <option>😢 Triste</option>
+        <option>😠 Enojado</option>
+      </select>
+    </label><br><br>
+    <label>2. ¿Qué ves en la imagen?<br>
+      <img src="imagen.webp" alt="Imagen" class="preg-img" />
+      <textarea id="r8" placeholder="Describe lo que ves..."></textarea>
+    </label><br><br>
+    <label>3. ¿Qué animal se parece más a ti?<br>
+      <select id="r9">
+        <option value="">Selecciona una opción</option>
+        <option>🐱 Gato</option>
+        <option>🐶 Perro</option>
+        <option>🐬 Delfín</option>
+      </select>
+    </label><br>
+    <button onclick="finalizarTest()">Finalizar</button>
+  </div>
+
+  <div class="pantalla" id="final">
+    <h2>🎉 ¡Felicidades, <span id="nombreFinal"></span>! 🎉</h2>
+    <p>Has completado todos los niveles de <strong>NeuroAventura</strong>.</p>
+    <div class="confeti" id="confeti"></div>
+  </div>
+
+  <footer>
+    Música por
+    <a href="https://pixabay.com/es/users/lkoliks-48415707/" target="_blank" rel="noopener noreferrer">Mykola Odnoroh</a>
+    desde
+    <a href="https://pixabay.com/music/" target="_blank" rel="noopener noreferrer">Pixabay</a>
+  </footer>
+</body>
+</html>
